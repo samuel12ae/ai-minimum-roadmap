@@ -1,17 +1,22 @@
-import math
+import numpy as np
 
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-from perceptron import Perceptron
+from multi_layer_perceptron import MultiLayerPerceptron
 
 """
-Skrypt do klasyfikacji gatunków irysów przy użyciu perceptronu.
+Skrypt do klasyfikacji gatunków irysów przy użyciu wielowarstwowego perceptronu (MLP).
 
 Ten program wykorzystuje zbiór danych Iris do trenowania i testowania
-prostego perceptronu w celu klasyfikacji gatunków irysów na podstawie
-ich cech morfologicznych.
+sieci neuronowej złożonej z wielu warstw perceptronów w celu klasyfikacji
+gatunków irysów na podstawie ich cech morfologicznych.
+
+Pojedynczy perceptron nie jest w stanie osiągnąć 100% dokładności na zbiorze Iris,
+ponieważ klasy versicolor i virginica nie są liniowo separowalne.
+Wielowarstwowy perceptron rozwiązuje ten problem dzięki nieliniowym
+funkcjom aktywacji i wielu warstwom neuronów.
 """
 
 # Wczytujemy zbiór danych Iris, który zawiera pomiary 150 kwiatów irysów
@@ -24,28 +29,32 @@ iris_dataset = datasets.load_iris()
 # random_state zapewnia powtarzalność wyników przy każdym uruchomieniu
 x_train, x_test, y_train, y_test = train_test_split(iris_dataset.data, iris_dataset.target, test_size=0.3, random_state=5)
 
-# Tworzymy nowy obiekt perceptronu
-perceptron = Perceptron()
+# Ustawiamy ziarno generatora liczb losowych dla powtarzalności wyników
+np.random.seed(42)
 
-# Trenujemy perceptron na danych treningowych
+# Tworzymy wielowarstwowy perceptron o architekturze:
+# - 4 neurony wejściowe (cechy kwiatów)
+# - 10 neuronów w warstwie ukrytej (z funkcją aktywacji sigmoid)
+# - 3 neurony wyjściowe (gatunki irysów, z funkcją aktywacji softmax)
+mlp = MultiLayerPerceptron([4, 10, 3])
+
+# Trenujemy wielowarstwowy perceptron na danych treningowych
 # Parametry:
 # - x_train: cechy kwiatów w zbiorze treningowym
 # - y_train: odpowiadające gatunki kwiatów
-# - 50: liczba iteracji (epok) treningu
-# - 0.02: współczynnik uczenia (learning rate)
-perceptron.train(x_train, y_train, 50, 0.02)
+# - 1000: liczba iteracji (epok) treningu
+# - 0.1: współczynnik uczenia (learning rate)
+mlp.train(x_train, y_train, 1000, 0.1)
 
-# Używamy wytrenowanego perceptronu do przewidywania gatunków
+# Używamy wytrenowanego wielowarstwowego perceptronu do przewidywania gatunków
 # na podstawie cech kwiatów ze zbioru testowego
-y_predicted = perceptron.predict(x_test)
-
-# Zaokrąglamy wyniki predykcji do liczb całkowitych,
-# ponieważ perceptron zwraca wartości ciągłe, a potrzebujemy etykiet klas (0, 1, 2)
-y_predicted = [math.ceil(y) for y in y_predicted] 
+# MLP zwraca bezpośrednio etykiety klas dzięki funkcji softmax i argmax,
+# więc nie potrzebujemy ręcznego zaokrąglania wyników
+y_predicted = mlp.predict(x_test)
 
 # Obliczamy dokładność modelu, porównując przewidywane gatunki
 # z rzeczywistymi gatunkami w zbiorze testowym
 accuracy = accuracy_score(y_test, y_predicted)
 
 # Wyświetlamy dokładność modelu w procentach
-print(f"Accuracy for our perceptron: {round(accuracy, 3) * 100}%")
+print(f"Accuracy for our multi-layer perceptron: {round(accuracy, 3) * 100}%")
